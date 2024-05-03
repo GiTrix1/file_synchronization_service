@@ -1,0 +1,10 @@
+certifi==2024.2.2
+charset-normalizer==3.3.2
+colorama==0.4.6
+idna==3.7
+loguru==0.7.2
+pep8==1.7.1
+python-dotenv==1.0.1
+requests==2.31.0
+urllib3==2.2.1
+win32-setctime==1.1.0
