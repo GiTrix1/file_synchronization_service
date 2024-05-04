@@ -30,22 +30,24 @@ class YandexDiskConnector:
                 f"{self.url}/upload?path={self.cloud_directory}/{file_name}"
                 "&overwrite=true", headers=self.headers
             ).json()
-            with open(fr"{self.local_directory}/{file_name}", "rb") as f:
-                requests.put(res_get["href"], files={"file": f})
-                if not_updated:
-                    logger.info(f"synchroniser {datetime.now()} "
-                                f"INFO Файл {file_name} успешно записан.")
-                else:
-                    logger.info(f"synchroniser {datetime.now()} INFO Файл"
-                                f" {file_name} успешно перезаписан.")
         except FileNotFoundError:
             logger.error(f"synchroniser {datetime.now()} "
                          f"ERROR Папка по пути {self.local_directory}"
                          " не найдена, создайте её и попробуйте снова.")
+            return
         except requests.exceptions.ConnectionError:
             logger.error(f"synchroniser {datetime.now()} "
                          "ERROR Не удалось удалить файл. "
                          "Ошибка соединения.")
+            return
+        with open(fr"{self.local_directory}/{file_name}", "rb") as f:
+            requests.put(res_get["href"], files={"file": f})
+            if not_updated:
+                logger.info(f"synchroniser {datetime.now()} "
+                            f"INFO Файл {file_name} успешно записан.")
+            else:
+                logger.info(f"synchroniser {datetime.now()} INFO Файл"
+                            f" {file_name} успешно перезаписан.")
 
     def delete_file(self, file_name):
         try:
@@ -60,19 +62,20 @@ class YandexDiskConnector:
 
     def cloud_files_information(self, connector):
         try:
-            list_files = []
             req = requests.get(f"{self.url}?path=Backup",
                                headers=self.headers).json()
-            files = req["_embedded"]["items"]
-            for file in files:
-                list_files.append(file["name"])
-            return list_files
         except requests.exceptions.ConnectionError:
             logger.error(f"synchroniser {datetime.now()} "
                          "ERROR Невозможно получить информацию о файле. "
                          "Ошибка соединения.")
             time.sleep(10)
             connector.cloud_files_information(connector)
+            return
+        list_files = []
+        files = req["_embedded"]["items"]
+        for file in files:
+            list_files.append(file["name"])
+        return list_files
 
     def file_sync_manager(self, connector):
         cloud_files = connector.cloud_files_information(connector)
