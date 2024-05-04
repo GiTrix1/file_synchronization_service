@@ -79,8 +79,6 @@ class YandexDiskConnector:
 
     def file_sync_manager(self, connector):
         cloud_files = connector.cloud_files_information(connector)
-        if not cloud_files:
-            logger.info(f"Создайте папку так, чтобы путь выглядел идентично этому: {self.local_directory}")
         for root, dirs, files in os.walk("F:/Backup"):
             for file in files:
                 cloud_time_file = self.list_file_modification_time.get(file)
