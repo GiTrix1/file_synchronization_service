@@ -15,14 +15,9 @@ class YandexDiskConnector:
         self.list_file_modification_time = {}
 
     def update_time(self, root, file):
-        try:
-            self.list_file_modification_time[file] = datetime.fromtimestamp(
-                os.path.getmtime(f"{root}/{file}")).strftime("%d-%m-%Y %H:%M:%S")
-            return self.list_file_modification_time
-        except FileNotFoundError:
-            logger.error(f"synchroniser {datetime.now()} "
-                         f"ERROR Папка по пути {self.local_directory}"
-                         " не найдена, создайте её и попробуйте снова.")
+        self.list_file_modification_time[file] = datetime.fromtimestamp(
+            os.path.getmtime(f"{root}/{file}")).strftime("%d-%m-%Y %H:%M:%S")
+        return self.list_file_modification_time
 
     def sync_file(self, file_name, not_updated):
         try:
@@ -37,7 +32,7 @@ class YandexDiskConnector:
             return
         except requests.exceptions.ConnectionError:
             logger.error(f"synchroniser {datetime.now()} "
-                         "ERROR Не удалось удалить файл. "
+                         f"ERROR Не удалось загрузить файл {file_name}. "
                          "Ошибка соединения.")
             return
         with open(fr"{self.local_directory}/{file_name}", "rb") as f:
@@ -57,7 +52,7 @@ class YandexDiskConnector:
                         f"INFO Файл {file_name} успешно удален.")
         except requests.exceptions.ConnectionError:
             logger.error(f"synchroniser {datetime.now()} "
-                         "ERROR Не удалось удалить файл. "
+                         f"ERROR Не удалось удалить файл {file_name}. "
                          "Ошибка соединения.")
 
     def cloud_files_information(self, connector):
