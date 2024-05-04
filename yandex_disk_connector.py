@@ -15,16 +15,21 @@ class YandexDiskConnector:
         self.list_file_modification_time = {}
 
     def update_time(self, root, file):
-        self.list_file_modification_time[file] = datetime.fromtimestamp(
-            os.path.getmtime(f"{root}/{file}")).strftime("%d-%m-%Y %H:%M:%S")
-        return self.list_file_modification_time
+        try:
+            self.list_file_modification_time[file] = datetime.fromtimestamp(
+                os.path.getmtime(f"{root}/{file}")).strftime("%d-%m-%Y %H:%M:%S")
+            return self.list_file_modification_time
+        except FileNotFoundError:
+            logger.error(f"synchroniser {datetime.now()} "
+                         f"ERROR Папка по пути {self.local_directory}"
+                         " не найдена, создайте её и попробуйте снова.")
 
     def sync_file(self, file_name, not_updated):
-        res_get = requests.get(
-            f"{self.url}/upload?path={self.cloud_directory}/{file_name}"
-            "&overwrite=true", headers=self.headers
-        ).json()
         try:
+            res_get = requests.get(
+                f"{self.url}/upload?path={self.cloud_directory}/{file_name}"
+                "&overwrite=true", headers=self.headers
+            ).json()
             with open(fr"{self.local_directory}/{file_name}", "rb") as f:
                 requests.put(res_get["href"], files={"file": f})
                 if not_updated:
@@ -37,12 +42,21 @@ class YandexDiskConnector:
             logger.error(f"synchroniser {datetime.now()} "
                          f"ERROR Папка по пути {self.local_directory}"
                          " не найдена, создайте её и попробуйте снова.")
+        except requests.exceptions.ConnectionError:
+            logger.error(f"synchroniser {datetime.now()} "
+                         "ERROR Не удалось удалить файл. "
+                         "Ошибка соединения.")
 
     def delete_file(self, file_name):
-        requests.delete(f"{self.url}?path={self.cloud_directory}/{file_name}",
-                        headers=self.headers)
-        logger.info(f"synchroniser {datetime.now()} "
-                    f"INFO Файл {file_name} успешно удален.")
+        try:
+            requests.delete(f"{self.url}?path={self.cloud_directory}/{file_name}",
+                            headers=self.headers)
+            logger.info(f"synchroniser {datetime.now()} "
+                        f"INFO Файл {file_name} успешно удален.")
+        except requests.exceptions.ConnectionError:
+            logger.error(f"synchroniser {datetime.now()} "
+                         "ERROR Не удалось удалить файл. "
+                         "Ошибка соединения.")
 
     def cloud_files_information(self, connector):
         try:
@@ -62,6 +76,8 @@ class YandexDiskConnector:
 
     def file_sync_manager(self, connector):
         cloud_files = connector.cloud_files_information(connector)
+        if not cloud_files:
+            logger.info(f"Создайте папку так, чтобы путь выглядел идентично этому: {self.local_directory}")
         for root, dirs, files in os.walk("F:/Backup"):
             for file in files:
                 cloud_time_file = self.list_file_modification_time.get(file)
